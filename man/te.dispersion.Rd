@@ -20,4 +20,3 @@ the average distance to the centroid.
 Jean Monlong
 }
 \keyword{internal}
-

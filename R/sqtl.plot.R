@@ -24,7 +24,7 @@ sqtl.plot <- function(geneId, snpId, tre.df, genotype.f, gene.loc, genic.window=
     }
 
     ## Uglily appeases R checks
-    trId = tre = type = strand = . = NULL
+    trId = tre = type = strand = . = start = end = NULL
 
     splitTS <- function(df){
         if(df$cdsStarts != "" & df$cdsEnds != ""){
@@ -55,7 +55,7 @@ sqtl.plot <- function(geneId, snpId, tre.df, genotype.f, gene.loc, genic.window=
     gtre.df = tidyr::gather(gene.tre, "sample", "tre", 3:ncol(gene.tre))
 
     if(length(unique(gtre.df$trId))>max.trans){
-        gtre.rk = aggregate(tre~trId, data=gtre.df, mean)
+        gtre.rk = stats::aggregate(tre~trId, data=gtre.df, mean)
         top.tr = gtre.rk$trId[which(rank(-gtre.rk$tre)<=max.trans)]
         gtre.df$trId[which(!(gtre.df$trId %in% top.tr))] = "others"
     }

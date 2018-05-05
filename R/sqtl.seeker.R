@@ -46,6 +46,7 @@
 ##' @param approx should the asymptotic distribution be used instead of permutations.
 ##' Default is TRUE.
 ##' @param verbose Should the gene IDs be outputed when analyzed. Default is TRUE. Mainly for debugging.
+##' @param use.dplyr Should dplyr be used ? Default is TRUE.
 ##' @return a data.frame with columns
 ##' \item{geneId}{the gene name}
 ##' \item{snpId}{the SNP name}
@@ -58,7 +59,7 @@
 ##' \item{F.svQTL/pv.svQTL/nb.perms.svQTL}{idem for svQTLs, if 'svQTL=TRUE'.}
 ##' @author Jean Monlong
 ##' @export
-sqtl.seeker <- function(tre.df,genotype.f, gene.loc, genic.window=5e3, min.nb.ext.scores=1000,nb.perm.max=1000000,nb.perm.max.svQTL=1e4,svQTL=FALSE,approx=TRUE, verbose=TRUE){
+sqtl.seeker <- function(tre.df,genotype.f, gene.loc, genic.window=5e3, min.nb.ext.scores=1000,nb.perm.max=1000000,nb.perm.max.svQTL=1e4,svQTL=FALSE,approx=TRUE, verbose=TRUE, use.dplyr=TRUE){
 
   . = nb.groups = snpId = NULL ## Uglily appease R checks (dplyr)
 
@@ -129,11 +130,14 @@ sqtl.seeker <- function(tre.df,genotype.f, gene.loc, genic.window=5e3, min.nb.ex
           }
           if(any(snps.to.keep=="PASS")){
             genotype.gene = genotype.gene[snps.to.keep=="PASS", ]
-            res.range = dplyr::do(dplyr::group_by(genotype.gene, snpId), compFscore(., tre.dist, tre.gene, svQTL=svQTL))
-            ## res.df = lapply(unique(genotype.gene$snpId), function(snpId){
-            ##   data.frame(snpId=snpId, compFscore(genotype.gene[which(genotype.gene$snpId==snpId),], tre.dist, tre.gene, svQTL=svQTL))
-            ## })
-            ## res.df = plyr::ldply(res.df)
+            if(use.dplyr){
+              res.range = dplyr::do(dplyr::group_by(genotype.gene, snpId), compFscore(., tre.dist, tre.gene, svQTL=svQTL))
+            } else {
+              res.range = lapply(unique(genotype.gene$snpId), function(snpId){
+                data.frame(snpId=snpId, compFscore(genotype.gene[which(genotype.gene$snpId==snpId),], tre.dist, tre.gene, svQTL=svQTL), stringsAsFactors=FALSE)
+              })
+              res.range = do.call(rbind, res.range)
+            }
           }
         }
         return(res.range)
@@ -143,19 +147,23 @@ sqtl.seeker <- function(tre.df,genotype.f, gene.loc, genic.window=5e3, min.nb.ex
       if(length(range.done)>0){
         res.df = res.df[range.done]
         res.df = do.call(rbind, res.df)
-        res.df = dplyr::do(dplyr::group_by(res.df, nb.groups), compPvalue(., tre.dist, approx=approx, min.nb.ext.scores=min.nb.ext.scores, nb.perm.max=nb.perm.max))
-        if(svQTL){
-          res.df = dplyr::do(dplyr::group_by(res.df, nb.groups), compPvalue(., tre.dist, svQTL=TRUE, min.nb.ext.scores=min.nb.ext.scores, nb.perm.max=nb.perm.max.svQTL))
+        res.df = as.data.frame(res.df)
+        if(use.dplyr){
+          res.df = dplyr::do(dplyr::group_by(res.df, nb.groups), compPvalue(., tre.dist, approx=approx, min.nb.ext.scores=min.nb.ext.scores, nb.perm.max=nb.perm.max))
+          if(svQTL){
+            res.df = dplyr::do(dplyr::group_by(res.df, nb.groups), compPvalue(., tre.dist, svQTL=TRUE, min.nb.ext.scores=min.nb.ext.scores, nb.perm.max=nb.perm.max.svQTL))
+          }
+        } else {
+          res.df = lapply(unique(res.df$nb.groups), function(nbgp.i){
+            res.f = res.df[which(res.df$nb.groups==nbgp.i),]
+            res.f = compPvalue(res.f, tre.dist, approx=approx, min.nb.ext.scores=min.nb.ext.scores, nb.perm.max=nb.perm.max)
+            if(svQTL){
+              res.f = compPvalue(res.f, tre.dist, svQTL=TRUE, min.nb.ext.scores=min.nb.ext.scores, nb.perm.max=nb.perm.max.svQTL)
+            }
+            res.f
+          })
+          res.df = do.call(rbind,res.df)
         }
-        ## res.df = lapply(unique(res.df$nb.groups), function(nbgp.i){
-        ##   res.f = res.df[which(res.df$nb.groups==nbgp.i),]
-        ##   res.f = compPvalue(res.f, tre.dist, approx=approx, min.nb.ext.scores=min.nb.ext.scores, nb.perm.max=nb.perm.max)
-        ##   if(svQTL){
-        ##     res.f = compPvalue(res.f, tre.dist, svQTL=TRUE, min.nb.ext.scores=min.nb.ext.scores, nb.perm.max=nb.perm.max.svQTL)
-        ##   }
-        ##   res.f
-        ## })
-        ## res.df = plyr::ldply(res.df)
         return(data.frame(done=TRUE,res.df))
       }
     } else {

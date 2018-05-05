@@ -41,4 +41,14 @@ test_that("Several ranges tested for one gene",{
   expect_true(!is.null(sqtl.seeker(te.df, genotype.f, gene.bed2)))
 })
 
+test_that("Non-dplyr Non-NULL output",{
+  expect_true(!is.null(sqtl.seeker(te.df, genotype.f, gene.bed, use.dplyr=FALSE)))
+})
+
+test_that("Non-dplyr Several ranges tested for one gene",{
+  gene.bed2 = gene.bed[rep(1:nrow(gene.bed),5),]
+  gene.bed2$geneId = sample(gene.bed2$geneId)
+  expect_true(!is.null(sqtl.seeker(te.df, genotype.f, gene.bed2, use.dplyr=FALSE)))
+})
+
 file.remove(c("temp.tsv","temp.tsv.bgz","temp.tsv.bgz.tbi"))

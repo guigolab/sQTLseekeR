@@ -7,7 +7,7 @@
 sqtl.seeker(tre.df, genotype.f, gene.loc, genic.window = 5000,
   min.nb.ext.scores = 1000, nb.perm.max = 1e+06,
   nb.perm.max.svQTL = 10000, svQTL = FALSE, approx = TRUE,
-  verbose = TRUE)
+  verbose = TRUE, use.dplyr = TRUE)
 }
 \arguments{
 \item{tre.df}{a data.frame with transcript relative expression
@@ -37,6 +37,8 @@ considerably increase the running time.}
 Default is TRUE.}
 
 \item{verbose}{Should the gene IDs be outputed when analyzed. Default is TRUE. Mainly for debugging.}
+
+\item{use.dplyr}{Should dplyr be used ? Default is TRUE.}
 }
 \value{
 a data.frame with columns
@@ -85,4 +87,3 @@ there is one transcript whose relative expression shifted by 20 percent between 
 \author{
 Jean Monlong
 }
-

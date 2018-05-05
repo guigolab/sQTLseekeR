@@ -44,4 +44,3 @@ by the total expression of all transcripts for the gene.
 \author{
 Jean Monlong
 }
-
